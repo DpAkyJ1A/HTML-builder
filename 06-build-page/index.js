@@ -7,67 +7,50 @@ const projectDir = path.resolve(__dirname, "project-dist");
 const projectAssetsDir = path.resolve(projectDir, "assets");
 
 function buildProject() {
-  // 1. create project-dist
   fs.readdir(projectDir, (err) => {
     if (err) createFolder(projectDir);
-    // 2. index.html from template.html
     createIndexHtml();
-    // 3. create bundle.css + 4. copy assets to project-dist/assets
-    // createBundle();
   });
 }
 
+// 1. create project-dist
 function createFolder(folder) {
   fs.mkdir(folder, (err) => {
     if (err) throw err;
   });
 }
 
-function createIndexHtml() {
-  fs.writeFile(path.resolve(projectDir, "index.html"), "", (err) => {
-    if (err) throw err;
+// 2. index.html from template.html
+async function createIndexHtml() {
+  let templateHtml = await fs.promises.readFile(
+    path.resolve(__dirname, "template.html"),
+    "utf-8"
+  );
+  let templatesNames = await fs.promises.readdir(componentsDir, {
+    withFileTypes: true,
   });
-  fs.readFile(path.resolve(__dirname, "template.html"), (err, data) => {
-    data = data.toString();
-    let newHtml = "";
-    for (let i = 0; i < data.length; i++) {
-      let templateName = "";
-      if (data[i] == "{") {
-        i += 2;
-        for (let j = 0; j < 10; j++) {
-          if (data[i + j] == "}") {
-            let promise = new Promise(function (resolve, reject) {
-              newHtml += pasteTemplate(templateName);
-              setTimeout(() => resolve("done"), 1000)
-            })
-            i += j + 1;
-            break;
-          }
-          templateName += data[i + j];
-        }
-      } else newHtml += data[i];
-    }
-    console.log(newHtml)
+  // it finally works!
+  for (let template of templatesNames) {
+    let templateData = await fs.promises.readFile(
+      path.resolve(componentsDir, template.name),
+      "utf-8"
+    );
+    const regExp = new RegExp(`{{${template.name.split(".")[0]}}}`, "g");
+    templateHtml = templateHtml.replace(
+      regExp,
+      templateData
+    );
+  }
+
+  fs.writeFile(path.resolve(projectDir, 'index.html'), templateHtml, (err) => {
+    if (err) throw err
+    createBundle();
   });
 }
 
-function pasteTemplate(templateName) {
-  fs.readdir(componentsDir, (err, files) => {
-    if (err) throw err;
-    files.forEach((file) => {
-      if (file.includes(templateName)) {
-        fs.readFile(path.resolve(componentsDir, file), (err, data) => {
-          if (err) throw err;
-          return data.toString();
-        });
-      }
-    });
-  });
-}
-
-// 3.
+// 3. create bundle.css
 function createBundle() {
-  fs.writeFile(path.resolve(projectDir, "bundle.css"), "", (err) => {
+  fs.writeFile(path.resolve(projectDir, "style.css"), "", (err) => {
     if (err) throw err;
   });
   fs.readdir(stylesDir, (err, files) => {
@@ -76,7 +59,7 @@ function createBundle() {
       if (path.extname(file) == ".css") {
         fs.readFile(path.resolve(stylesDir, file), (err, data) => {
           if (err) throw err;
-          fs.appendFile(path.resolve(projectDir, "bundle.css"), data, (err) => {
+          fs.appendFile(path.resolve(projectDir, "style.css"), data, (err) => {
             if (err) throw err;
           });
         });
@@ -86,7 +69,7 @@ function createBundle() {
   });
 }
 
-// 4.
+// 4. copy assets to project-dist/assets
 function copyAssets() {
   fs.readdir(projectAssetsDir, (err) => {
     if (err) createFolder(projectAssetsDir);
