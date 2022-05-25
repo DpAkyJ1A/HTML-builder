@@ -9,9 +9,9 @@ function createFolder() {
   });
 }
 
-function copyDir() {
-  fs.readdir(dirCopy, (err) => {
-    if (err) createFolder();
+async function copyDir() {
+  await fs.promises.rm(dirCopy, { recursive: true, force: true });
+  createFolder();
     fs.readdir(dir, (err, files) => {
       if (err) throw err;
       files.forEach((file) => {
@@ -20,7 +20,7 @@ function copyDir() {
         );
       });
     });
-  });
+
 }
 
 copyDir();
