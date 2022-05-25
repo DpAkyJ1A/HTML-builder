@@ -4,7 +4,7 @@ const { stdin, stdout } = process;
 
 stdout.write("Write something: ");
 stdin.on("data", (data) => {
-  if (data.toString().substring(0, data.length - 2) == "exit") process.exit();
+  if (data.toString().trim() == "exit") process.exit();
   fs.access("file.txt", fs.constants.F_OK, (err) => {
     if (err) init();
     fs.appendFile(path.join(__dirname, "file.txt"), data, (err) => {
